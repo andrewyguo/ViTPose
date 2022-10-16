@@ -6,8 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
-data/
-workdirs/
+data
+work_dirs/
 
 # Distribution / packaging
 .Python

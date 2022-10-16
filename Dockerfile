@@ -13,8 +13,10 @@ RUN git clone https://github.com/ViTAE-Transformer/ViTPose.git ViTPose \
 && pip install numpy==1.22 \
 && apt-get update \
 && export DEBIAN_FRONTEND=noninteractive \ 
-&& apt-get install -y libgl1
+&& apt-get install -y libgl1 \
+&& apt-get install -y s3cmd 
 
+# Download MAE weights to /workspace
 RUN wget https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth 
 
 WORKDIR /workspace/ViTPose
@@ -29,6 +31,8 @@ WORKDIR /workspace/ViTPose
 
 
 # bash tools/dist_train.sh configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/ViTPose_base_simple_coco_256x192.py 1 --cfg-options model.pretrained=venv/mae_pretrain_vit_base.pth --seed 0
+
+# bash tools/dist_train.sh configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/ViTPose_base_crackerbox.py 1 --cfg-options model.pretrained=venv/mae_pretrain_vit_base.pth --seed 0
 
 # OLD RUN COMMANDS
 # RUN pip install -r requirements.txt \
