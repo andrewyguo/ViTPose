@@ -30,13 +30,13 @@ lr_config = dict(
 total_epochs = 210
 target_type = 'GaussianHeatmap'
 channel_cfg = dict(
-    num_output_channels=8,
-    dataset_joints=8,
+    num_output_channels=9,
+    dataset_joints=9,
     dataset_channel=[
-        [0, 1, 2, 3, 4, 5, 6, 7],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8],
     ],
     inference_channel=[
-        0, 1, 2, 3, 4, 5, 6, 7
+        0, 1, 2, 3, 4, 5, 6, 7, 8
     ])
 
 # model settings
@@ -45,8 +45,8 @@ model = dict(
     pretrained=None,
     backbone=dict(
         type='ViT',
-        img_size=(512, 512),
-        patch_size=64,
+        img_size=(256, 192),
+        patch_size=16,
         embed_dim=768,
         depth=12,
         num_heads=12,
@@ -59,9 +59,9 @@ model = dict(
     keypoint_head=dict(
         type='TopdownHeatmapSimpleHead',
         in_channels=768,
-        num_deconv_layers=3,
-        num_deconv_filters=(256, 256, 256),
-        num_deconv_kernels=(4, 4, 4),
+        num_deconv_layers=2,
+        num_deconv_filters=(256, 256),
+        num_deconv_kernels=(4, 4),
         extra=dict(final_conv_kernel=1, ),
         out_channels=channel_cfg['num_output_channels'],
         loss_keypoint=dict(type='JointsMSELoss', use_target_weight=True)),
@@ -76,8 +76,8 @@ model = dict(
 )
 
 data_cfg = dict(
-    image_size=[512, 512], # change this to be smaller 
-    heatmap_size=[64, 64], # 48, 64
+    image_size=[192, 256], # change this to be smaller 
+    heatmap_size=[48, 64], # 48, 64
     num_output_channels=channel_cfg['num_output_channels'],
     num_joints=channel_cfg['dataset_joints'],
     dataset_channel=channel_cfg['dataset_channel'],
@@ -129,9 +129,9 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'data/crackerbox_FAT'
+data_root = 'data/crackerbox'
 data = dict(
-    samples_per_gpu=12,
+    samples_per_gpu=64,
     workers_per_gpu=4,
     # val_dataloader=dict(samples_per_gpu=32),
     # test_dataloader=dict(samples_per_gpu=32),
@@ -156,12 +156,12 @@ data = dict(
     #     data_cfg=data_cfg,
     #     pipeline=test_pipeline,
     #     dataset_info={{_base_.dataset_info}}),
-    test=dict(
-        type='TopDownYCBCrackerBoxDataset',
-        ann_file=f'{data_root}/keypoints.json',
-        img_prefix=f'{data_root}', # NEED TO CHANGE THIS
-        data_cfg=data_cfg,
-        pipeline=test_pipeline,
-        dataset_info={{_base_.dataset_info}}),
+    # test=dict(
+    #     type='TopDownYCBCrackerBoxDataset',
+    #     ann_file=f'{data_root}/keypoints.json',
+    #     img_prefix=f'{data_root}', # NEED TO CHANGE THIS
+    #     data_cfg=data_cfg,
+    #     pipeline=test_pipeline,
+    #     dataset_info={{_base_.dataset_info}}),
 )
 
