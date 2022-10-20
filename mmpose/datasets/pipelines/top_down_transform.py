@@ -170,7 +170,14 @@ class TopDownGetRandomScaleRotation:
         rf = self.rot_factor
 
         s_factor = np.clip(np.random.randn() * sf + 1, 1 - sf, 1 + sf)
-        s = s * s_factor
+        try:
+            s = s * s_factor
+        except Exception as e:
+            print("Type of s[0] and s_factor", type(s[0]), type(s_factor))
+            raise e
+        # print("Type of s[0] and s_factor", type(s), type(s[0]), type(s_factor))
+        
+        
 
         r_factor = np.clip(np.random.randn() * rf, -rf * 2, rf * 2)
         r = r_factor if np.random.rand() <= self.rot_prob else 0
@@ -208,6 +215,8 @@ class TopDownAffine:
         c = results['center']
         s = results['scale']
         r = results['rotation']
+
+        # print(f"Type of c[0]: {type(c)} {type(c[0])} s[0]: {type(s)} {type(s[0])} r: {type(r)}" )
 
         if self.use_udp:
             trans = get_warp_matrix(r, c * 2.0, image_size - 1.0, s * 200.0)

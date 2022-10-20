@@ -82,6 +82,8 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
+    # print("cfg", cfg, "\n\n\n\n\n-------")
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
@@ -167,6 +169,9 @@ def main():
     meta['seed'] = seed
 
     model = build_posenet(cfg.model)
+    # print("model")
+    # print(model, "\n=-=-=-=")
+
     datasets = [build_dataset(cfg.data.train)]
 
     if len(cfg.workflow) == 2:
@@ -186,7 +191,8 @@ def main():
         datasets,
         cfg,
         distributed=distributed,
-        validate=(not args.no_validate),
+        # validate=(not args.no_validate),
+        validate=False,
         timestamp=timestamp,
         meta=meta)
 
