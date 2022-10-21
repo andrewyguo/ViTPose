@@ -26,7 +26,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 # Download MAE weights to /workspace
 RUN wget https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth 
 
-COPY ./configs /workspace/ViTPose/configs
+COPY ../../configs /workspace/ViTPose/configs
 
 WORKDIR /workspace/ViTPose
 

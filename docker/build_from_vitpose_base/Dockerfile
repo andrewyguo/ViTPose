@@ -1,6 +1,6 @@
 FROM vitpose_base
 
-COPY ./configs /workspace/ViTPose/configs
+COPY ../../configs /workspace/ViTPose/configs
 
 WORKDIR /workspace/ViTPose
 
