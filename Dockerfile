@@ -26,9 +26,16 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 # Download MAE weights to /workspace
 RUN wget https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth 
 
-COPY ../../configs /workspace/ViTPose/configs
+COPY ./configs /workspace/ViTPose/configs
 
 WORKDIR /workspace/ViTPose
+
+# Build from base container 
+# FROM vitpose_base
+
+# COPY ./configs /workspace/ViTPose/configs
+
+# WORKDIR /workspace/ViTPose
 
 # Run with full memory: 
 # docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864  -it --rm vitpose/initial_container
