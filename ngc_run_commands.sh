@@ -12,8 +12,8 @@ echo "    max_concurrent_requests = 10" >> ~/.aws/config
 echo "" >> ~/.aws/config 
 
 # Get data
-aws s3 cp s3://coco_crackerbox_60K/crackerbox_data.zip ./data/crackerbox_data.zip --endpoint-url https://pbss.s8k.io
-unzip -q ./data/crackerbox_data 
+aws s3 cp s3://coco_crackerbox_60K/crackerbox_data.zip ./data/crackerbox.zip --endpoint-url https://pbss.s8k.io
+unzip -q ./data/crackerbox.zip
 
 # Start training 
 bash tools/dist_train.sh \

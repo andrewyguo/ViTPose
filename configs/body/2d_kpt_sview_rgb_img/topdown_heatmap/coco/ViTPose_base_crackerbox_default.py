@@ -45,7 +45,7 @@ model = dict(
     pretrained=None,
     backbone=dict(
         type='ViT',
-        img_size=(256, 192),
+        img_size=(256, 256),
         patch_size=16,
         embed_dim=768,
         depth=12,
@@ -76,8 +76,8 @@ model = dict(
 )
 
 data_cfg = dict(
-    image_size=[192, 256], # change this to be smaller 
-    heatmap_size=[48, 64], # 48, 64
+    image_size=[256, 256], # change this to be smaller 
+    heatmap_size=[64, 64], # 48, 64
     num_output_channels=channel_cfg['num_output_channels'],
     num_joints=channel_cfg['dataset_joints'],
     dataset_channel=channel_cfg['dataset_channel'],
@@ -130,6 +130,8 @@ val_pipeline = [
 test_pipeline = val_pipeline
 
 data_root = 'data/crackerbox'
+test_data_root = 'data/crackerbox_FAT'
+
 data = dict(
     samples_per_gpu=64,
     workers_per_gpu=4,
@@ -156,12 +158,12 @@ data = dict(
     #     data_cfg=data_cfg,
     #     pipeline=test_pipeline,
     #     dataset_info={{_base_.dataset_info}}),
-    # test=dict(
-    #     type='TopDownYCBCrackerBoxDataset',
-    #     ann_file=f'{data_root}/keypoints.json',
-    #     img_prefix=f'{data_root}', # NEED TO CHANGE THIS
-    #     data_cfg=data_cfg,
-    #     pipeline=test_pipeline,
-    #     dataset_info={{_base_.dataset_info}}),
+    test=dict(
+        type='TopDownYCBCrackerBoxDataset',
+        ann_file=f'{test_data_root}/keypoints.json',
+        img_prefix=f'{test_data_root}',
+        data_cfg=data_cfg,
+        pipeline=test_pipeline,
+        dataset_info={{_base_.dataset_info}}),
 )
 
