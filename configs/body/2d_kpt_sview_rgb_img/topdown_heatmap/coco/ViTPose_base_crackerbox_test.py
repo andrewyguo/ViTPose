@@ -29,15 +29,15 @@ lr_config = dict(
     warmup_ratio=0.001,
     step=[170, 200],
 )
-total_epochs = 210
+total_epochs = 10
 target_type = "GaussianHeatmap"
 channel_cfg = dict(
-    num_output_channels=8,
-    dataset_joints=8,
+    num_output_channels=9,
+    dataset_joints=9,
     dataset_channel=[
-        [0, 1, 2, 3, 4, 5, 6, 7],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8],
     ],
-    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7],
+    inference_channel=[0, 1, 2, 3, 4, 5, 6, 7, 8],
 )
 
 # model settings
@@ -46,8 +46,8 @@ model = dict(
     pretrained=None,
     backbone=dict(
         type="ViT",
-        img_size=(512, 512),
-        patch_size=64,
+        img_size=(256, 256),
+        patch_size=16,
         embed_dim=768,
         depth=12,
         num_heads=12,
@@ -60,9 +60,9 @@ model = dict(
     keypoint_head=dict(
         type="TopdownHeatmapSimpleHead",
         in_channels=768,
-        num_deconv_layers=3,
-        num_deconv_filters=(256, 256, 256),
-        num_deconv_kernels=(4, 4, 4),
+        num_deconv_layers=2,
+        num_deconv_filters=(256, 256),
+        num_deconv_kernels=(4, 4),
         extra=dict(
             final_conv_kernel=1,
         ),
@@ -81,7 +81,7 @@ model = dict(
 )
 
 data_cfg = dict(
-    image_size=[512, 512],  # change this to be smaller
+    image_size=[256, 256],  # change this to be smaller
     heatmap_size=[64, 64],  # 48, 64
     num_output_channels=channel_cfg["num_output_channels"],
     num_joints=channel_cfg["dataset_joints"],
@@ -94,7 +94,7 @@ data_cfg = dict(
 train_pipeline = [
     dict(type="LoadImageFromFile"),
     dict(type="TopDownGetRandomScaleRotation", rot_factor=40, scale_factor=0.5),
-    dict(type="TopDownAffine", use_udp=True),
+    dict(type="TopDownSquareCrop", debug=False),
     dict(type="ToTensor"),
     dict(type="NormalizeTensor", mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     dict(
@@ -118,7 +118,8 @@ train_pipeline = [
 
 val_pipeline = [
     dict(type="LoadImageFromFile"),
-    dict(type="TopDownAffine", use_udp=True),
+    # dict(type='TopDownAffine', use_udp=True),
+    dict(type="TopDownSquareCrop", debug=False, show_image=False),
     dict(type="ToTensor"),
     dict(type="NormalizeTensor", mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     dict(
@@ -137,9 +138,11 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = "data/crackerbox_FAT"
+data_root = "data/test"
+test_data_root = "data/crackerbox_FAT"
+
 data = dict(
-    samples_per_gpu=12,
+    samples_per_gpu=96,
     workers_per_gpu=4,
     # val_dataloader=dict(samples_per_gpu=32),
     # test_dataloader=dict(samples_per_gpu=32),
@@ -167,8 +170,8 @@ data = dict(
     #     dataset_info={{_base_.dataset_info}}),
     test=dict(
         type="TopDownYCBCrackerBoxDataset",
-        ann_file=f"{data_root}/keypoints.json",
-        img_prefix=f"{data_root}",  # NEED TO CHANGE THIS
+        ann_file=f"{test_data_root}/keypoints.json",
+        img_prefix=f"{test_data_root}",
         data_cfg=data_cfg,
         pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}},

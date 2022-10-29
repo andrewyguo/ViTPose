@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from doctest import OutputChecker
 import cv2
 import numpy as np
 
@@ -7,6 +8,8 @@ from mmpose.core.post_processing import (affine_transform, fliplr_joints,
                                          warp_affine_joints)
 from mmpose.datasets.builder import PIPELINES
 
+from PIL import Image, ImageDraw
+import os
 
 @PIPELINES.register_module()
 class TopDownRandomFlip:
@@ -216,8 +219,6 @@ class TopDownAffine:
         s = results['scale']
         r = results['rotation']
 
-        # print(f"Type of c[0]: {type(c)} {type(c[0])} s[0]: {type(s)} {type(s[0])} r: {type(r)}" )
-
         if self.use_udp:
             trans = get_warp_matrix(r, c * 2.0, image_size - 1.0, s * 200.0)
             if not isinstance(img, list):
@@ -260,6 +261,157 @@ class TopDownAffine:
         results['joints_3d_visible'] = joints_3d_visible
 
         return results
+
+
+@PIPELINES.register_module()
+class TopDownCrop:
+    """Crop image based on bounding box dimensions plus padding (%)
+
+    """
+    def __init__(self, padding=0.05, debug=False):
+        self.padding = padding
+        self.debug = debug
+
+    def __call__(self, results):
+        target_image_size = results['ann_info']['image_size']
+
+        original_img = results['img']
+        joints_3d = results['joints_3d']
+
+        bbox = results["bbox"]
+        x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+
+        x = max(0, int(x - self.padding * w))
+        y = max(0, int(y - self.padding * h))
+        x2 = min(int(x + (1 + self.padding * 2) * w + 2), original_img.shape[0])
+        y2 = min(int(y + (1 + self.padding * 2) * h + 2), original_img.shape[1])
+
+        img_cropped = original_img[y:y2, x:x2]
+
+        img_resized = cv2.resize(img_cropped, (target_image_size[0], target_image_size[1]))
+
+        # Update joints_3d in new reference frame 
+        h_scale = img_resized.shape[0] / img_cropped.shape[0]
+        v_scale = img_resized.shape[1] / img_cropped.shape[1]
+
+        for i, joint in enumerate(joints_3d):
+            joints_3d[i][0] = (joint[0] - x) * v_scale
+            joints_3d[i][1] = (joint[1] - y) * h_scale
+        
+        results['joints_3d'] = joints_3d
+        results['img'] = img_resized 
+
+        if self.debug:
+            self._debug(results)
+
+        return results 
+    
+    def _debug(self, results, file_suffix="_debug_crop"):
+        image_file = results['image_file']
+        img = results['img']
+        joints_3d = results['joints_3d']
+
+        print("results['image_file']: ", results['image_file'])
+        print("results['bbox']: ", results['bbox'])
+        print("2) joints_3d:", joints_3d)
+        
+        image = Image.fromarray(img)
+        draw = ImageDraw.Draw(image)
+
+        for joint in joints_3d:
+            draw.ellipse([(joint[0] - 2, joint[1] - 2),(joint[0] + 2, joint[1] + 2)], fill=(0, 255, 0))
+
+        split = image_file.split('.')
+        out_image_file = split[0] + file_suffix + "." + split[1]
+        out_image_file = os.path.join(os.getcwd(), out_image_file)
+        image.save(os.path.join(os.getcwd(), out_image_file))
+
+@PIPELINES.register_module()
+class TopDownSquareCrop:
+    """Crop image based on bounding box dimensions plus padding (%)
+    Maintains square aspect ratio 
+
+    """
+    def __init__(self, padding=0.1, debug=False, show_image=False):
+        self.padding = padding
+        self.debug = debug
+        self.show_image = show_image
+
+    def __call__(self, results):
+        target_image_size = results['ann_info']['image_size']
+
+        original_img = results['img']
+        joints_3d = results['joints_3d']
+
+        c = results["center"]
+        bbox = results["bbox"]
+        x, y, length = bbox[0], bbox[1], max(bbox[2], bbox[3])
+
+        x = max(round(c[0] - (length * (1+self.padding) / 2)), 0)
+        y = max(round(c[1] - (length * (1+self.padding) / 2)), 0)
+        x2 = min(round(c[0] + (length * (1+self.padding) / 2)), original_img.shape[1])
+        y2 = min(round(c[1] + (length * (1+self.padding) / 2)), original_img.shape[0])
+        
+        if x == 0: 
+            x2 = min(round(x + length * (1 + self.padding)), original_img.shape[1])
+        if y == 0: 
+            y2 = min(round(y + length * (1 + self.padding)), original_img.shape[0])
+        if x2 == original_img.shape[1]:
+            x = max(round(x2 - length * (1 + self.padding)), 0)
+        if y2 == original_img.shape[0]:
+            y = max(round(y2 - length * (1 + self.padding)), 0)
+
+        img_cropped = original_img[y:y2, x:x2]
+
+        if self.show_image:
+            self._show_image(img_cropped, "Cropped")
+            self._show_image(original_img, "Original")
+
+        img_resized = cv2.resize(img_cropped, (target_image_size[0], target_image_size[1]))
+
+        # Update joints_3d in new reference frame 
+        h_scale = img_resized.shape[0] / img_cropped.shape[0]
+        v_scale = img_resized.shape[1] / img_cropped.shape[1]
+
+        for i, joint in enumerate(joints_3d):
+            joints_3d[i][0] = (joint[0] - x) * v_scale
+            joints_3d[i][1] = (joint[1] - y) * h_scale
+        
+        results['joints_3d'] = joints_3d
+        results['img'] = img_resized 
+
+        if self.debug:
+            self._debug(results)
+
+        return results 
+    
+    def _debug(self, results, file_suffix="_debug_squareCrop"):
+        image_file = results['image_file']
+        img = results['img']
+        joints_3d = results['joints_3d']
+
+        print("results['image_file']: ", results['image_file'])
+        print("results['bbox']: ", results['bbox'])
+        print("2) joints_3d:", joints_3d)
+        
+        image = Image.fromarray(img)
+        draw = ImageDraw.Draw(image)
+
+        for joint in joints_3d:
+            draw.ellipse([(joint[0] - 2, joint[1] - 2),(joint[0] + 2, joint[1] + 2)], fill=(0, 255, 0))
+
+        self._write_image(image, image_file, file_suffix)
+
+    def _write_image(self, image, image_file, suffix):
+        split = image_file.split('.')
+        out_image_file = split[0] + suffix + "." + split[1]
+        out_image_file = os.path.join(os.getcwd(), out_image_file)
+        image.save(os.path.join(os.getcwd(), out_image_file))
+
+    def _show_image(self, img, window_name="Image"):
+        cv2.imshow(window_name, img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 
 @PIPELINES.register_module()
@@ -556,6 +708,22 @@ class TopDownGenerateTarget:
 
         if use_different_joint_weights:
             target_weight = np.multiply(target_weight, joint_weights)
+
+
+        # Print heatmaps 
+        # print("cfg: ", cfg)
+        # for i in range(len(target)):
+        #     heatmap = target[i] * 255.0
+        #     print("heatmap: ", heatmap.max())
+        #     out_image = Image.fromarray(heatmap)
+        #     out_image = out_image.convert("1")
+
+        #     # split = image_file.split('.')
+        #     # out_image_file = split[0] + "_affine_transform." + split[1]
+        #     out_image_file = os.path.join(os.getcwd(), f"heatmap_{i}.png")
+
+        #     out_image.save(os.path.join(os.getcwd(), out_image_file))
+            
 
         return target, target_weight
 
